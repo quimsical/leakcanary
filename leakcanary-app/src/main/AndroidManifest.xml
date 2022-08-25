@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+<!--  <queries>-->
+<!--&lt;!&ndash;    <package android:name="com.example.leakcanary" />&ndash;&gt;-->
+<!--  </queries>-->
+
   <application
       android:allowBackup="true"
       android:dataExtractionRules="@xml/data_extraction_rules"
@@ -27,6 +31,17 @@
           android:name="android.app.lib_name"
           android:value="" />
     </activity>
+
+    <service
+      android:name="org.leakcanary.LeakUiAppService"
+      android:exported="true">
+      <!-- TODO Double check this is the right setup.-->
+      <!-- TODO Probs use $applicationId in package name instead.-->
+      <intent-filter>
+        <action android:name="org.leakcanary.LeakUiAppService.BIND" />
+        <category android:name="android.intent.category.DEFAULT" />
+      </intent-filter>
+    </service>
   </application>
 
 </manifest>

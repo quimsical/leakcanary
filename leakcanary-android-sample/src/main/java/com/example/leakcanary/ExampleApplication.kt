@@ -20,6 +20,11 @@ import android.app.Dialog
 import android.app.Service
 import android.os.StrictMode
 import android.view.View
+import leakcanary.EventListener
+import leakcanary.EventListener.Event.HeapAnalysisDone
+import leakcanary.EventListener.Event.HeapAnalysisDone.HeapAnalysisSucceeded
+import leakcanary.LeakCanary
+import org.leakcanary.internal.PokeLeakUiApp
 
 open class ExampleApplication : Application() {
   val leakedViews = mutableListOf<View>()
@@ -29,6 +34,14 @@ open class ExampleApplication : Application() {
   override fun onCreate() {
     super.onCreate()
     enabledStrictMode()
+
+    LeakCanary.config = LeakCanary.config.run {
+      copy(eventListeners = eventListeners + EventListener {
+        if (it is HeapAnalysisDone<*>) {
+          PokeLeakUiApp().poke(this@ExampleApplication)
+        }
+      })
+    }
   }
 
   private fun enabledStrictMode() {
