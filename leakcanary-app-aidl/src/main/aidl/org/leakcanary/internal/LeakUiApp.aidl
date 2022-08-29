@@ -1,5 +1,7 @@
 package org.leakcanary.internal;
 
+parcelable ParcelableHeapAnalysis;
+
 interface LeakUiApp {
-	void sayHi();
+ void sendHeapAnalysis(in ParcelableHeapAnalysis heapAnalysis);
 }

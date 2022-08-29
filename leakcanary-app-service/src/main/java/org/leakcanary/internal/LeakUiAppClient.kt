@@ -5,8 +5,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
-import android.util.Log
+import org.leakcanary.internal.ParcelableHeapAnalysis.Companion.asParcelable
 import shark.HeapAnalysis
+import shark.SharkLog
 
 /**
  * Note about Target API 30 bindService() restrictions.
@@ -25,15 +26,15 @@ import shark.HeapAnalysis
  * So we'll have apps poke the LeakCanary app by binding, which then gives it permission to bind
  * a service back.
  */
-class PokeLeakUiApp(
+class LeakUiAppClient(
   context: Context
 ) {
   private val appContext = context.applicationContext
 
-  fun poke(heapAnalysis: HeapAnalysis) {
+  fun sendHeapAnalysis(heapAnalysis: HeapAnalysis) {
     val serviceConnection = object : ServiceConnection {
       override fun onServiceConnected(name: ComponentName, service: IBinder) {
-        LeakUiApp.Stub.asInterface(service).sayHi()
+        LeakUiApp.Stub.asInterface(service).sendHeapAnalysis(heapAnalysis.asParcelable())
         appContext.unbindService(this)
       }
 
@@ -46,7 +47,7 @@ class PokeLeakUiApp(
       }
     val bringingServiceUp = appContext.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
 
-    Log.d("PokeLeakUiApp", "LeakUiAppService up=$bringingServiceUp")
+    SharkLog.d { "LeakUiAppService up=$bringingServiceUp" }
   }
 
 }

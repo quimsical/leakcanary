@@ -38,7 +38,7 @@
       <!-- TODO Double check this is the right setup.-->
       <!-- TODO Probs use $applicationId in package name instead.-->
       <intent-filter>
-        <action android:name="org.leakcanary.LeakUiAppService.BIND" />
+        <action android:name="org.leakcanary.internal.LeakUiApp" />
         <category android:name="android.intent.category.DEFAULT" />
       </intent-filter>
     </service>
