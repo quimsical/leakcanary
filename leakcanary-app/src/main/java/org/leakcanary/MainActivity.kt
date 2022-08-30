@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
-import android.os.Handler
 import android.os.IBinder
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -23,11 +22,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import dagger.hilt.android.AndroidEntryPoint
 import org.leakcanary.internal.HeapDataRepository
 import org.leakcanary.ui.theme.MyApplicationTheme
 import shark.HeapAnalysis
 import shark.SharkLog
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
   private var heapDataRepository: HeapDataRepository? = null
@@ -60,12 +61,7 @@ class MainActivity : ComponentActivity() {
     setContent {
       MyApplicationTheme {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-          Greeting(connected, LeakUiAppService.receivedAnalysis) {
-            if (heapDataRepository == null) {
-              SharkLog.d { "no service" }
-            }
-            heapDataRepository?.sayHi()
-          }
+          ScreenHost()
         }
       }
     }

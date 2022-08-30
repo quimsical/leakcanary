@@ -1,0 +1,37 @@
+CREATE TABLE leak_trace (
+  id INTEGER PRIMARY KEY,
+  class_simple_name TEXT,
+  leak_trace_index INTEGER AS Integer,
+  heap_analysis_id INTEGER,
+  leak_signature TEXT,
+  FOREIGN KEY(heap_analysis_id) REFERENCES heap_analysis(id),
+  FOREIGN KEY(leak_signature) REFERENCES leak(signature)
+);
+
+insert:
+INSERT INTO leak_trace (
+class_simple_name,
+leak_trace_index,
+heap_analysis_id,
+leak_signature
+)
+VALUES (?, ?, ?, ?);
+
+deleteByHeapAnalysisId:
+DELETE FROM leak_trace
+WHERE heap_analysis_id=:heap_analysis_id;
+
+retrieveLeakBySignature:
+SELECT
+lt.leak_trace_index
+, lt.heap_analysis_id
+, lt.class_simple_name
+, h.created_at_time_millis
+, l.short_description
+, l.is_read
+, l.is_library_leak
+FROM leak_trace lt
+LEFT JOIN leak l ON lt.leak_signature = l.signature
+LEFT JOIN heap_analysis h ON lt.heap_analysis_id = h.id
+WHERE l.signature = :signature
+ORDER BY h.created_at_time_millis DESC;

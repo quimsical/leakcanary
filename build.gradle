@@ -18,6 +18,8 @@ buildscript {
     classpath libs.gradlePlugin.detekt
     classpath libs.gradlePlugin.binaryCompatibility
     classpath libs.gradlePlugin.keeper
+    classpath libs.gradlePlugin.sqldelight
+    classpath 'com.google.dagger:hilt-android-gradle-plugin:2.43.2'
   }
 }
 
