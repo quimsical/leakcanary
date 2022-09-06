@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import org.leakcanary.internal.ParcelableHeapAnalysis.Companion.asParcelable
 import shark.HeapAnalysis
 import shark.SharkLog
@@ -32,22 +34,33 @@ class LeakUiAppClient(
   private val appContext = context.applicationContext
 
   fun sendHeapAnalysis(heapAnalysis: HeapAnalysis) {
+    val sendLatch = CountDownLatch(1)
+    lateinit var leakUiApp: LeakUiApp
+
     val serviceConnection = object : ServiceConnection {
+      // Note: this is on the main thread, don't block.
       override fun onServiceConnected(name: ComponentName, service: IBinder) {
-        LeakUiApp.Stub.asInterface(service).sendHeapAnalysis(heapAnalysis.asParcelable())
-        appContext.unbindService(this)
+        leakUiApp = LeakUiApp.Stub.asInterface(service)
+        sendLatch.countDown()
       }
 
       override fun onServiceDisconnected(name: ComponentName) = Unit
     }
 
+    // TODO Enforce package signature, here or on service connected.
     val intent = Intent(LeakUiApp::class.qualifiedName)
       .apply {
         setPackage("org.leakcanary")
       }
-    val bringingServiceUp = appContext.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
-
+    val bringingServiceUp =
+      appContext.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
     SharkLog.d { "LeakUiAppService up=$bringingServiceUp" }
+    val serviceConnected = sendLatch.await(20, TimeUnit.SECONDS)
+    if (serviceConnected) {
+      leakUiApp.sendHeapAnalysis(heapAnalysis.asParcelable())
+    } else {
+      // TODO Handle service connection error
+    }
+    appContext.unbindService(serviceConnection)
   }
-
 }

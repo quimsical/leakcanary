@@ -17,6 +17,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallTopAppBar
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import org.leakcanary.Screen.ClientAppAnalyses
@@ -28,7 +30,8 @@ import org.leakcanary.Screen.Leaks
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 fun ScreenHost(backStack: BackStack = viewModel()) {
-  val currentScreenState = backStack.currentScreenState
+  val currentScreenState by backStack.currentScreenState.collectAsState()
+
   BackHandler(enabled = currentScreenState.canGoBack) {
     backStack.goBack()
   }

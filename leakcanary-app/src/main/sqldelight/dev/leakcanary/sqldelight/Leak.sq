@@ -6,7 +6,7 @@ CREATE TABLE leak (
 );
 
 insert:
-INSERT INTO leak (
+INSERT OR IGNORE INTO leak (
 signature,
 short_description,
 is_library_leak
