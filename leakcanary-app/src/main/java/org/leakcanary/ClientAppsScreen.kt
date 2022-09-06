@@ -34,9 +34,7 @@ class ClientAppsViewModel @Inject constructor(
 ) : ViewModel() {
   val clientAppState = clientAppsStateStream().stateIn(
     viewModelScope,
-    // 5000 to keep subscribed on config changes
-    // There's got to be a better way. https://twitter.com/Piwai/status/1564391597743083521
-    started = SharingStarted.WhileSubscribed(5000),
+    started = WhileSubscribedOrRetained,
     initialValue = Loading
   )
 
