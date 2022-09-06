@@ -14,14 +14,13 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import org.leakcanary.ClientAppState.Loaded
 import org.leakcanary.ClientAppState.Loading
 import org.leakcanary.Screen.ClientAppAnalyses
 
-class ClientApp(val packageName: String, val leakCount: Int)
+data class ClientApp(val packageName: String, val leakCount: Int)
 
 sealed interface ClientAppState {
   object Loading : ClientAppState
@@ -32,13 +31,13 @@ sealed interface ClientAppState {
 class ClientAppsViewModel @Inject constructor(
   private val repository: HeapRepository,
 ) : ViewModel() {
-  val clientAppState = clientAppsStateStream().stateIn(
+  val clientAppState = stateStream().stateIn(
     viewModelScope,
     started = WhileSubscribedOrRetained,
     initialValue = Loading
   )
 
-  private fun clientAppsStateStream() = repository.listClientApps()
+  private fun stateStream() = repository.listClientApps()
     .map { app -> Loaded(app.map { ClientApp(it.package_name, it.leak_count!!) }) }
 }
 

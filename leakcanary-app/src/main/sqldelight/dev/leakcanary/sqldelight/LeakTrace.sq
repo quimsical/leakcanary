@@ -8,6 +8,10 @@ CREATE TABLE leak_trace (
   FOREIGN KEY(leak_signature) REFERENCES leak(signature)
 );
 
+-- Note: FK doesn't automatically create an index.
+CREATE INDEX leak_trace_heap_analysis_id ON leak_trace(heap_analysis_id);
+CREATE INDEX leak_trace_leak_signature ON leak_trace(leak_signature);
+
 insert:
 INSERT INTO leak_trace (
 class_simple_name,
