@@ -1,4 +1,4 @@
-package org.leakcanary
+package org.leakcanary.data
 
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
@@ -7,6 +7,8 @@ import dev.leakcanary.sqldelight.SelectAllByApp
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import org.leakcanary.Database
+import org.leakcanary.util.toByteArray
 import shark.HeapAnalysis
 import shark.HeapAnalysisFailure
 import shark.HeapAnalysisSuccess

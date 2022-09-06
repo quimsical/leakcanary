@@ -1,4 +1,4 @@
-package org.leakcanary
+package org.leakcanary.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -21,15 +21,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
-import org.leakcanary.Screen.ClientAppAnalyses
-import org.leakcanary.Screen.ClientAppAnalysis
-import org.leakcanary.Screen.Leak
-import org.leakcanary.Screen.Leaks
+import org.leakcanary.screens.Screen.ClientAppAnalyses
+import org.leakcanary.screens.Screen.ClientAppAnalysis
+import org.leakcanary.screens.Screen.ClientApps
+import org.leakcanary.screens.Screen.Leak
+import org.leakcanary.screens.Screen.Leaks
 
 // TODO Handle intents
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
-fun ScreenHost(backStack: BackStack = viewModel()) {
+fun ScreenHost(backStack: BackStackViewModel = viewModel()) {
   val currentScreenState by backStack.currentScreenState.collectAsState()
 
   BackHandler(enabled = currentScreenState.canGoBack) {
@@ -70,7 +71,7 @@ fun ScreenHost(backStack: BackStack = viewModel()) {
         when (targetState.screen) {
           is ClientAppAnalyses -> ClientAppAnalysesScreen()
           is ClientAppAnalysis -> TODO()
-          Screen.ClientApps -> ClientAppsScreen()
+          ClientApps -> ClientAppsScreen()
           is Leak -> TODO()
           Leaks -> TODO()
         }

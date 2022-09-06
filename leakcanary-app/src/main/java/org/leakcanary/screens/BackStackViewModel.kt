@@ -1,17 +1,18 @@
-package org.leakcanary
+package org.leakcanary.screens
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.components.ActivityRetainedComponent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.scopes.ActivityRetainedScoped
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import org.leakcanary.Screen.ClientApps
+import org.leakcanary.screens.Screen.ClientApps
 
 /**
  * Makes the BackStack state stream injectable in activity scoped view models. This
@@ -24,12 +25,28 @@ class BackStackHolder @Inject constructor() {
   lateinit var backStack: BackStack
 }
 
+@InstallIn(ActivityRetainedComponent::class)
+@Module
+class BackStackModule {
+  @Provides fun provideBackStack(holder: BackStackHolder): BackStack = holder.backStack
+}
+
+interface BackStack {
+  val currentScreenState: StateFlow<CurrentScreenState>
+
+  fun goBack()
+
+  fun goTo(screen: Screen)
+
+  fun resetTo(screen: Screen)
+}
+
 // TODO This currently does not save UI state in the backstack.
 @HiltViewModel
-class BackStack @Inject constructor(
+class BackStackViewModel @Inject constructor(
   private val savedStateHandle: SavedStateHandle,
   stateStream: BackStackHolder
-) : ViewModel() {
+) : ViewModel(), BackStack {
 
   private var screenStack: List<Screen> = savedStateHandle[BACKSTACK_KEY] ?: arrayListOf(ClientApps)
     set(value) {
@@ -39,20 +56,20 @@ class BackStack @Inject constructor(
 
   private val _currentScreenState = MutableStateFlow(screenStack.asState(true))
 
-  val currentScreenState = _currentScreenState.asStateFlow()
+  override val currentScreenState = _currentScreenState.asStateFlow()
 
   init {
     stateStream.backStack = this
   }
 
-  fun goBack() {
+  override fun goBack() {
     check(_currentScreenState.value.canGoBack) {
       "Backstack cannot go further back."
     }
     navigate(screenStack.dropLast(1), forward = false)
   }
 
-  fun goTo(screen: Screen) {
+  override fun goTo(screen: Screen) {
     navigate(screenStack + screen, forward = true)
   }
 
@@ -65,7 +82,7 @@ class BackStack @Inject constructor(
     private const val BACKSTACK_KEY = "backstack"
   }
 
-  fun resetTo(screen: Screen) {
+  override fun resetTo(screen: Screen) {
     navigate(listOf(screen), forward = false)
   }
 }

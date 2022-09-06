@@ -1,4 +1,4 @@
-package org.leakcanary
+package org.leakcanary.util
 
 import shark.SharkLog
 import java.io.ByteArrayInputStream

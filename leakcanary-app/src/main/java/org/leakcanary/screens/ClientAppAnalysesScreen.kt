@@ -1,0 +1,165 @@
+package org.leakcanary.screens
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import org.leakcanary.data.HeapRepository
+import org.leakcanary.util.TimeFormatter
+import org.leakcanary.WhileSubscribedOrRetained
+import org.leakcanary.screens.ClientAppAnalysesState.Loaded
+import org.leakcanary.screens.ClientAppAnalysesState.Loading
+import org.leakcanary.screens.ClientAppAnalysis.Failure
+import org.leakcanary.screens.ClientAppAnalysis.Success
+import org.leakcanary.screens.Screen.ClientAppAnalyses
+
+sealed class ClientAppAnalysis(val id: Long, val createdAtTimeMillis: Long) {
+  class Success(id: Long, createdAtTimeMillis: Long, val leakCount: Int) :
+    ClientAppAnalysis(id, createdAtTimeMillis)
+
+  class Failure(id: Long, createdAtTimeMillis: Long, val exceptionSummary: String) :
+    ClientAppAnalysis(id, createdAtTimeMillis)
+}
+
+sealed interface ClientAppAnalysesState {
+  object Loading : ClientAppAnalysesState
+  class Loaded(val analyses: List<ClientAppAnalysis>) : ClientAppAnalysesState
+}
+
+@HiltViewModel
+class ClientAppAnalysesViewModel @Inject constructor(
+  private val repository: HeapRepository,
+  private val backStack: BackStack
+) : ViewModel() {
+
+  // This flow is stopped when unsubscribed, so renavigating to the same
+  // screen always polls the latest screen. Yeah it should be a flow instead.
+  val state = backStack.currentScreenState
+    .filter { it.screen is ClientAppAnalyses }
+    .flatMapLatest { state ->
+      stateStream((state.screen as ClientAppAnalyses).packageName)
+    }.stateIn(
+      viewModelScope, started = WhileSubscribedOrRetained, initialValue = Loading
+    )
+
+  private fun stateStream(appPackageName: String) =
+    repository.listAppAnalyses(appPackageName).map { app ->
+      Loaded(app.map { row ->
+        if (row.exception_summary == null) {
+          Success(
+            id = row.id,
+            createdAtTimeMillis = row.created_at_time_millis!!,
+            leakCount = row.leak_count!!
+          )
+        } else {
+          Failure(
+            id = row.id,
+            createdAtTimeMillis = row.created_at_time_millis!!,
+            exceptionSummary = row.exception_summary
+          )
+        }
+      })
+    }
+
+  fun onAnalysisClicked(analysis: ClientAppAnalysis) {
+    TODO("Not yet implemented")
+  }
+}
+
+@Composable fun ClientAppAnalysesScreen(viewModel: ClientAppAnalysesViewModel = viewModel()) {
+  val stateProp by viewModel.state.collectAsState()
+
+  when (val state = stateProp) {
+    is Loading -> {
+      Text("Loading...")
+    }
+    is Loaded -> {
+      LazyColumn(
+        modifier =
+        Modifier
+          .fillMaxHeight()
+          .padding(horizontal = 8.dp)
+      ) {
+        item {
+          Row(modifier = Modifier.padding(horizontal = 8.dp)) {
+            // TODO This should be a primary button
+            Button(
+              onClick = {},
+              modifier = Modifier.weight(1f)
+            ) {
+              Text("Import Heap Dump")
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Button(modifier = Modifier.weight(1f), onClick = {}) {
+              Text("Dump Heap Now")
+            }
+          }
+        }
+
+        if (state.analyses.isEmpty()) {
+          item {
+            Text("No analysis")
+          }
+        }
+        items(state.analyses) { analysis ->
+          ClientAppAnalysisItem(analysis, onClick = { viewModel.onAnalysisClicked(analysis) })
+        }
+
+      }
+    }
+  }
+}
+
+@Composable private fun ClientAppAnalysisItem(analysis: ClientAppAnalysis, onClick: () -> Unit) {
+  Column(
+    Modifier
+      .fillMaxWidth()
+      // TODO The 8.dp should be included in the pressed state background
+      .padding(vertical = 16.dp, horizontal = 8.dp)
+      // TODO Pressed state should be animated, why is it not?
+      // Maybe this should be a button?
+      .clickable(onClick = onClick)
+  ) {
+    val context = LocalContext.current
+    val createdAt = TimeFormatter.formatTimestamp(context, analysis.createdAtTimeMillis)
+    Text(
+      text = createdAt,
+      style = MaterialTheme.typography.headlineSmall,
+      modifier = Modifier.padding(vertical = 4.dp)
+    )
+    val description =
+      when (analysis) {
+        is Failure -> analysis.exceptionSummary
+        is Success -> "${analysis.leakCount} Distinct Leak" +
+          if (analysis.leakCount == 0) "" else "s"
+      }
+    Text(
+      text = description,
+      style = MaterialTheme.typography.bodyMedium
+    )
+  }
+}

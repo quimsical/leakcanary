@@ -1,4 +1,4 @@
-package org.leakcanary
+package org.leakcanary.service
 
 import android.app.Service
 import android.content.Intent
@@ -6,6 +6,7 @@ import android.os.Binder
 import android.os.IBinder
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import org.leakcanary.data.HeapRepository
 import org.leakcanary.internal.LeakUiApp
 import org.leakcanary.internal.ParcelableHeapAnalysis
 

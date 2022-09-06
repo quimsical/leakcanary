@@ -1,4 +1,4 @@
-package org.leakcanary
+package org.leakcanary.data
 
 import android.app.Application
 import com.squareup.sqldelight.android.AndroidSqliteDriver
@@ -8,6 +8,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+import org.leakcanary.Database
 
 @Module
 @InstallIn(SingletonComponent::class)

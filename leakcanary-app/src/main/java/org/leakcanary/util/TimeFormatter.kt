@@ -1,4 +1,4 @@
-package org.leakcanary
+package org.leakcanary.util
 
 import android.content.Context
 import android.text.format.DateUtils

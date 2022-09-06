@@ -1,4 +1,4 @@
-package org.leakcanary
+package org.leakcanary.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -16,9 +16,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import org.leakcanary.ClientAppState.Loaded
-import org.leakcanary.ClientAppState.Loading
-import org.leakcanary.Screen.ClientAppAnalyses
+import org.leakcanary.data.HeapRepository
+import org.leakcanary.WhileSubscribedOrRetained
+import org.leakcanary.screens.ClientAppState.Loaded
+import org.leakcanary.screens.ClientAppState.Loading
+import org.leakcanary.screens.Screen.ClientAppAnalyses
 
 data class ClientApp(val packageName: String, val leakCount: Int)
 
@@ -30,12 +32,18 @@ sealed interface ClientAppState {
 @HiltViewModel
 class ClientAppsViewModel @Inject constructor(
   private val repository: HeapRepository,
+  private val backStack: BackStack
 ) : ViewModel() {
+
   val clientAppState = stateStream().stateIn(
     viewModelScope,
     started = WhileSubscribedOrRetained,
     initialValue = Loading
   )
+
+  fun onAppClicked(app: ClientApp) {
+    backStack.goTo(ClientAppAnalyses(app.packageName))
+  }
 
   private fun stateStream() = repository.listClientApps()
     .map { app -> Loaded(app.map { ClientApp(it.package_name, it.leak_count!!) }) }
@@ -44,7 +52,6 @@ class ClientAppsViewModel @Inject constructor(
 @Composable
 fun ClientAppsScreen(
   viewModel: ClientAppsViewModel = viewModel(),
-  backStack: BackStack = viewModel()
 ) {
   val clientAppState: ClientAppState by viewModel.clientAppState.collectAsState()
 
@@ -56,9 +63,7 @@ fun ClientAppsScreen(
       if (state.clientApps.isEmpty()) {
         Text(text = "No apps")
       } else {
-        ClientAppList(apps = state.clientApps, onAppClicked = { app ->
-          backStack.goTo(ClientAppAnalyses(app.packageName))
-        })
+        ClientAppList(apps = state.clientApps, onAppClicked = viewModel::onAppClicked)
       }
     }
   }

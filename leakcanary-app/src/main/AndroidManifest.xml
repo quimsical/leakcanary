@@ -31,7 +31,7 @@
     </activity>
 
     <service
-      android:name="org.leakcanary.LeakUiAppService"
+      android:name="org.leakcanary.service.LeakUiAppService"
       android:exported="true">
       <!-- TODO Double check this is the right setup.-->
       <!-- TODO Probs use $applicationId in package name instead.-->

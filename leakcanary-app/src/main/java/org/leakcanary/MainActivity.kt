@@ -24,8 +24,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.ViewModelProvider
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import org.leakcanary.internal.HeapDataRepository
+import org.leakcanary.screens.BackStackViewModel
+import org.leakcanary.screens.ScreenHost
 import org.leakcanary.ui.theme.MyApplicationTheme
 import shark.HeapAnalysis
 import shark.SharkLog
@@ -54,7 +55,7 @@ class MainActivity : ComponentActivity() {
 
     // Dumb hack to ensure the backstack is created early enough in the activity
     // graph so that BackStackHolder will always have a ref.
-    ViewModelProvider(this)[BackStack::class.java]
+    ViewModelProvider(this)[BackStackViewModel::class.java]
 
     val intent = Intent("org.leakcanary.internal.HeapDataRepositoryService.BIND")
       .apply {
