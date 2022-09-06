@@ -53,12 +53,12 @@ sealed interface ClientAppAnalysesState {
 @HiltViewModel
 class ClientAppAnalysesViewModel @Inject constructor(
   private val repository: HeapRepository,
-  private val backStack: BackStack
+  private val navigator: Navigator
 ) : ViewModel() {
 
   // This flow is stopped when unsubscribed, so renavigating to the same
   // screen always polls the latest screen. Yeah it should be a flow instead.
-  val state = backStack.currentScreenState
+  val state = navigator.currentScreenState
     .filter { it.screen is ClientAppAnalyses }
     .flatMapLatest { state ->
       stateStream((state.screen as ClientAppAnalyses).packageName)

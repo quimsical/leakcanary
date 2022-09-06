@@ -22,16 +22,16 @@ import org.leakcanary.screens.Screen.ClientApps
  */
 @ActivityRetainedScoped
 class BackStackHolder @Inject constructor() {
-  lateinit var backStack: BackStack
+  lateinit var navigator: Navigator
 }
 
 @InstallIn(ActivityRetainedComponent::class)
 @Module
 class BackStackModule {
-  @Provides fun provideBackStack(holder: BackStackHolder): BackStack = holder.backStack
+  @Provides fun provideBackStack(holder: BackStackHolder): Navigator = holder.navigator
 }
 
-interface BackStack {
+interface Navigator {
   val currentScreenState: StateFlow<CurrentScreenState>
 
   fun goBack()
@@ -46,7 +46,7 @@ interface BackStack {
 class BackStackViewModel @Inject constructor(
   private val savedStateHandle: SavedStateHandle,
   stateStream: BackStackHolder
-) : ViewModel(), BackStack {
+) : ViewModel(), Navigator {
 
   private var screenStack: List<Screen> = savedStateHandle[BACKSTACK_KEY] ?: arrayListOf(ClientApps)
     set(value) {
@@ -59,7 +59,7 @@ class BackStackViewModel @Inject constructor(
   override val currentScreenState = _currentScreenState.asStateFlow()
 
   init {
-    stateStream.backStack = this
+    stateStream.navigator = this
   }
 
   override fun goBack() {

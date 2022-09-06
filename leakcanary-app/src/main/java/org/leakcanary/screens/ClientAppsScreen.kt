@@ -32,7 +32,7 @@ sealed interface ClientAppState {
 @HiltViewModel
 class ClientAppsViewModel @Inject constructor(
   private val repository: HeapRepository,
-  private val backStack: BackStack
+  private val navigator: Navigator
 ) : ViewModel() {
 
   val clientAppState = stateStream().stateIn(
@@ -42,7 +42,7 @@ class ClientAppsViewModel @Inject constructor(
   )
 
   fun onAppClicked(app: ClientApp) {
-    backStack.goTo(ClientAppAnalyses(app.packageName))
+    navigator.goTo(ClientAppAnalyses(app.packageName))
   }
 
   private fun stateStream() = repository.listClientApps()
