@@ -28,14 +28,14 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import org.leakcanary.data.HeapRepository
-import org.leakcanary.util.TimeFormatter
 import org.leakcanary.WhileSubscribedOrRetained
+import org.leakcanary.data.HeapRepository
 import org.leakcanary.screens.ClientAppAnalysesState.Loaded
 import org.leakcanary.screens.ClientAppAnalysesState.Loading
 import org.leakcanary.screens.ClientAppAnalysis.Failure
 import org.leakcanary.screens.ClientAppAnalysis.Success
 import org.leakcanary.screens.Screen.ClientAppAnalyses
+import org.leakcanary.util.TimeFormatter
 
 sealed class ClientAppAnalysis(val id: Long, val createdAtTimeMillis: Long) {
   class Success(id: Long, createdAtTimeMillis: Long, val leakCount: Int) :
@@ -137,12 +137,10 @@ class ClientAppAnalysesViewModel @Inject constructor(
 @Composable private fun ClientAppAnalysisItem(analysis: ClientAppAnalysis, onClick: () -> Unit) {
   Column(
     Modifier
-      .fillMaxWidth()
-      // TODO The 8.dp should be included in the pressed state background
-      .padding(vertical = 16.dp, horizontal = 8.dp)
-      // TODO Pressed state should be animated, why is it not?
-      // Maybe this should be a button?
+      // TODO Why is there no ripple?
       .clickable(onClick = onClick)
+      .fillMaxWidth()
+      .padding(vertical = 16.dp, horizontal = 8.dp)
   ) {
     val context = LocalContext.current
     val createdAt = TimeFormatter.formatTimestamp(context, analysis.createdAtTimeMillis)
