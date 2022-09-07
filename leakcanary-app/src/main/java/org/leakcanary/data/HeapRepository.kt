@@ -2,12 +2,17 @@ package org.leakcanary.data
 
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
+import com.squareup.sqldelight.runtime.coroutines.mapToOne
 import dev.leakcanary.sqldelight.App
+import dev.leakcanary.sqldelight.RetrieveLeakReadStatuses
 import dev.leakcanary.sqldelight.SelectAllByApp
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.transformLatest
 import org.leakcanary.Database
+import org.leakcanary.util.Serializables
 import org.leakcanary.util.toByteArray
 import shark.HeapAnalysis
 import shark.HeapAnalysisFailure
@@ -75,4 +80,36 @@ class HeapRepository @Inject constructor(
   fun listClientApps(): Flow<List<App>> {
     return db.appQueries.selectAll().asFlow().mapToList(Dispatchers.IO)
   }
+
+  // TODO Handle error, this will throw NPE if the analysis doesn't exist
+  fun getHeapAnalysis(heapAnalysisId: Long): Flow<HeapAnalysis> {
+    return db.heapAnalysisQueries.selectById(heapAnalysisId).asFlow()
+      .mapToOne(Dispatchers.IO).map { Serializables.fromByteArray<HeapAnalysis>(it)!! }
+  }
+
+  fun getLeakReadStatuses(heapAnalysisId: Long): Flow<Map<String, Boolean>> {
+    return db.leakQueries.retrieveLeakReadStatuses(heapAnalysisId).asFlow().mapToList(Dispatchers.IO)
+      .map { it.associate { (signature, isRead) -> signature to isRead } }
+  }
+
+  fun getAnalysisDetails(heapAnalysisId: Long): Flow<Pair<HeapAnalysisSuccess, List<RetrieveLeakReadStatuses>>> {
+     return db.heapAnalysisQueries.selectById(heapAnalysisId)
+      .asFlow()
+      .mapToOne(Dispatchers.IO)
+      .transformLatest { selectByIdResult ->
+        val heapAnalysis = Serializables.fromByteArray<HeapAnalysisSuccess>(selectByIdResult)
+
+        // TODO Handle null (deleted or failure)
+        heapAnalysis!!
+
+        db.leakQueries.retrieveLeakReadStatuses(heapAnalysisId)
+          .asFlow()
+          .mapToList(Dispatchers.IO)
+          .map { statuses ->
+            heapAnalysis to statuses
+          }
+      }
+  }
+
+
 }

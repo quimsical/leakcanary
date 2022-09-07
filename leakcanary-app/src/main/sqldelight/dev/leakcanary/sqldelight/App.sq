@@ -1,6 +1,6 @@
 CREATE TABLE app (
-  package_name TEXT PRIMARY KEY,
-  leak_count INTEGER AS Integer DEFAULT 0
+  package_name TEXT NOT NULL PRIMARY KEY,
+  leak_count INTEGER AS Integer NOT NULL DEFAULT 0
 );
 
 insertOrIgnore:
@@ -21,6 +21,6 @@ SET leak_count = (
 SELECT
 COUNT(DISTINCT lt.leak_signature)
 FROM leak_trace lt
-LEFT JOIN heap_analysis h ON lt.heap_analysis_id = h.id
+JOIN heap_analysis h ON lt.heap_analysis_id = h.id
 WHERE h.app_package_name=app.package_name
 );

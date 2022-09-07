@@ -7,7 +7,10 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.with
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -16,6 +19,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallTopAppBar
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -38,7 +42,7 @@ fun ScreenHost(backStack: BackStackViewModel = viewModel()) {
   }
   Scaffold(
     topBar = {
-      SmallTopAppBar(
+      TopAppBar(
         title = {
           Text(text = currentScreenState.screen.title)
         },
@@ -53,7 +57,7 @@ fun ScreenHost(backStack: BackStackViewModel = viewModel()) {
         }
       )
     }
-  ) {
+  ) { paddingValues ->
     AnimatedContent(
       targetState = currentScreenState,
       transitionSpec = {
@@ -65,12 +69,14 @@ fun ScreenHost(backStack: BackStackViewModel = viewModel()) {
         ) with slideOutHorizontally(targetOffsetX = { fullWidth ->
           directionFactor * -fullWidth
         })
-      }
+      },
+      modifier = Modifier.padding(paddingValues)
     ) { targetState ->
-      Box(modifier = Modifier.fillMaxWidth()) {
+      Box(
+        modifier = Modifier.fillMaxWidth()) {
         when (targetState.screen) {
           is ClientAppAnalyses -> ClientAppAnalysesScreen()
-          is ClientAppAnalysis -> TODO()
+          is ClientAppAnalysis -> ClientAppAnalysisScreen()
           ClientApps -> ClientAppsScreen()
           is Leak -> TODO()
           Leaks -> TODO()

@@ -15,7 +15,7 @@ sealed class Screen(val title: String) : Parcelable {
   class ClientAppAnalyses(val packageName: String) : Screen("Heap Analyses")
 
   @Parcelize
-  class ClientAppAnalysis(val packageName: String, val analysisId: Long) : Screen("Analysis")
+  class ClientAppAnalysis(val analysisId: Long) : Screen("Analysis")
 
   @Parcelize
   object Leaks : Screen("Leaks")

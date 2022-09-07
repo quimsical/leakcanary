@@ -32,22 +32,23 @@ import org.leakcanary.WhileSubscribedOrRetained
 import org.leakcanary.data.HeapRepository
 import org.leakcanary.screens.ClientAppAnalysesState.Loaded
 import org.leakcanary.screens.ClientAppAnalysesState.Loading
-import org.leakcanary.screens.ClientAppAnalysis.Failure
-import org.leakcanary.screens.ClientAppAnalysis.Success
+import org.leakcanary.screens.ClientAppAnalysisItemData.Failure
+import org.leakcanary.screens.ClientAppAnalysisItemData.Success
 import org.leakcanary.screens.Screen.ClientAppAnalyses
+import org.leakcanary.screens.Screen.ClientAppAnalysis
 import org.leakcanary.util.TimeFormatter
 
-sealed class ClientAppAnalysis(val id: Long, val createdAtTimeMillis: Long) {
+sealed class ClientAppAnalysisItemData(val id: Long, val createdAtTimeMillis: Long) {
   class Success(id: Long, createdAtTimeMillis: Long, val leakCount: Int) :
-    ClientAppAnalysis(id, createdAtTimeMillis)
+    ClientAppAnalysisItemData(id, createdAtTimeMillis)
 
   class Failure(id: Long, createdAtTimeMillis: Long, val exceptionSummary: String) :
-    ClientAppAnalysis(id, createdAtTimeMillis)
+    ClientAppAnalysisItemData(id, createdAtTimeMillis)
 }
 
 sealed interface ClientAppAnalysesState {
   object Loading : ClientAppAnalysesState
-  class Loaded(val analyses: List<ClientAppAnalysis>) : ClientAppAnalysesState
+  class Loaded(val analyses: List<ClientAppAnalysisItemData>) : ClientAppAnalysesState
 }
 
 @HiltViewModel
@@ -57,7 +58,7 @@ class ClientAppAnalysesViewModel @Inject constructor(
 ) : ViewModel() {
 
   // This flow is stopped when unsubscribed, so renavigating to the same
-  // screen always polls the latest screen. Yeah it should be a flow instead.
+  // screen always polls the latest screen.
   val state = navigator.currentScreenState
     .filter { it.screen is ClientAppAnalyses }
     .flatMapLatest { state ->
@@ -72,21 +73,23 @@ class ClientAppAnalysesViewModel @Inject constructor(
         if (row.exception_summary == null) {
           Success(
             id = row.id,
-            createdAtTimeMillis = row.created_at_time_millis!!,
-            leakCount = row.leak_count!!
+            createdAtTimeMillis = row.created_at_time_millis,
+            leakCount = row.leak_count
           )
         } else {
           Failure(
             id = row.id,
-            createdAtTimeMillis = row.created_at_time_millis!!,
+            createdAtTimeMillis = row.created_at_time_millis,
             exceptionSummary = row.exception_summary
           )
         }
       })
     }
 
-  fun onAnalysisClicked(analysis: ClientAppAnalysis) {
-    TODO("Not yet implemented")
+  fun onAnalysisClicked(analysis: ClientAppAnalysisItemData) {
+    // TODO Don't go here if failure, go to a failure screen instead.
+    check(analysis is Success)
+    navigator.goTo(ClientAppAnalysis(analysis.id))
   }
 }
 
@@ -134,7 +137,7 @@ class ClientAppAnalysesViewModel @Inject constructor(
   }
 }
 
-@Composable private fun ClientAppAnalysisItem(analysis: ClientAppAnalysis, onClick: () -> Unit) {
+@Composable private fun ClientAppAnalysisItem(analysis: ClientAppAnalysisItemData, onClick: () -> Unit) {
   Column(
     Modifier
       // TODO Why is there no ripple?
@@ -153,7 +156,7 @@ class ClientAppAnalysesViewModel @Inject constructor(
       when (analysis) {
         is Failure -> analysis.exceptionSummary
         is Success -> "${analysis.leakCount} Distinct Leak" +
-          if (analysis.leakCount == 0) "" else "s"
+          if (analysis.leakCount == 1) "" else "s"
       }
     Text(
       text = description,

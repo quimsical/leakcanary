@@ -46,7 +46,7 @@ class ClientAppsViewModel @Inject constructor(
   }
 
   private fun stateStream() = repository.listClientApps()
-    .map { app -> Loaded(app.map { ClientApp(it.package_name, it.leak_count!!) }) }
+    .map { app -> Loaded(app.map { ClientApp(it.package_name, it.leak_count) }) }
 }
 
 @Composable

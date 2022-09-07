@@ -1,8 +1,8 @@
 CREATE TABLE leak (
   signature TEXT PRIMARY KEY,
-  short_description TEXT,
-  is_library_leak INTEGER AS Boolean,
-  is_read INTEGER AS Boolean DEFAULT 0
+  short_description TEXT NOT NULL,
+  is_library_leak INTEGER AS Boolean NOT NULL,
+  is_read INTEGER AS Boolean NOT NULL DEFAULT 0
 );
 
 insert:
@@ -15,10 +15,13 @@ VALUES (?, ?, ?);
 
 retrieveLeakReadStatuses:
 SELECT
-signature
-, is_read
-FROM leak
-WHERE signature IN :signatures;
+l.signature
+, l.is_read
+FROM leak_trace lt
+JOIN leak l ON lt.leak_signature = l.signature
+WHERE lt.heap_analysis_id = :heap_analysis_id
+GROUP BY 1, 2
+;
 
 retrieveAllLeaks:
 SELECT
@@ -29,8 +32,8 @@ l.signature
 , MIN(l.is_library_leak) AS is_library_leak
 , MAX(l.is_read) AS is_read
 FROM leak_trace lt
-LEFT JOIN leak l ON lt.leak_signature = l.signature
-LEFT JOIN heap_analysis h ON lt.heap_analysis_id = h.id
+JOIN leak l ON lt.leak_signature = l.signature
+JOIN heap_analysis h ON lt.heap_analysis_id = h.id
 GROUP BY 1
 ORDER BY leak_trace_count DESC, created_at_time_max_millis DESC;
 
