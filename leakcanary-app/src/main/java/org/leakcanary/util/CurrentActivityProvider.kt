@@ -1,10 +1,8 @@
 package org.leakcanary.util
 
 import android.app.Activity
-import android.app.Application
 import android.app.Application.ActivityLifecycleCallbacks
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -22,38 +20,39 @@ interface ActivityProviderEntryPoint {
 @ActivityRetainedScoped
 class CurrentActivityProvider @Inject constructor() {
 
-  private var _currentActivity: Activity? = null
+  private var currentActivity: Activity? = null
 
-  /**
-   * Prefer using [withActivity]
-   * Provides the current activity inside an activity retained scoped
-   * object. DO NOT STORE THE RETURNED REFERENCE ANYWHERE.
-   */
-  val currentActivity: Activity
-    get() {
-      checkMainThread()
-      return _currentActivity!!
+  fun <T> withActivity(block: Activity.() -> T): T {
+    checkMainThread()
+    val activity = currentActivity
+    check(activity != null) {
+      "Don't call this after the activity is finished!"
     }
-
-  fun <T> withActivity(block: Activity.() -> T) : T {
-    return currentActivity.block()
+    return activity.block()
   }
 
   companion object {
-    private fun ComponentActivity.getProvider() =
-      EntryPointAccessors.fromActivity<ActivityProviderEntryPoint>(this).activityProvider
+    private fun Activity.withProvider(
+      block: CurrentActivityProvider.() -> Unit
+    ) {
+      if (this is GeneratedComponentManagerHolder) {
+        val entryPoint: ActivityProviderEntryPoint =
+          EntryPointAccessors.fromActivity(this)
+        val provider = entryPoint.activityProvider
+        provider.block()
+      }
+    }
 
     fun onActivityCreated(activity: Activity) {
-      if (activity is ComponentActivity && activity is GeneratedComponentManagerHolder) {
-        activity.getProvider()._currentActivity = activity
+      activity.withProvider {
+        currentActivity = activity
       }
     }
 
     fun onActivityDestroyed(activity: Activity) {
-      if (activity is ComponentActivity && activity is GeneratedComponentManagerHolder) {
-        val provider = activity.getProvider()
-        if (provider._currentActivity === activity) {
-          provider._currentActivity = null
+      activity.withProvider {
+        if (currentActivity === activity) {
+          currentActivity = null
         }
       }
     }
@@ -62,13 +61,10 @@ class CurrentActivityProvider @Inject constructor() {
 
 class ActivityProviderCallbacks : ActivityLifecycleCallbacks {
 
-  companion object {
-    fun Application.installActivityProviderCallbacks() {
-      registerActivityLifecycleCallbacks(ActivityProviderCallbacks())
-    }
-  }
-
-  override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+  override fun onActivityCreated(
+    activity: Activity,
+    savedInstanceState: Bundle?
+  ) {
     CurrentActivityProvider.onActivityCreated(activity)
   }
 

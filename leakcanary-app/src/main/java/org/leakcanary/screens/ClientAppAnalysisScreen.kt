@@ -44,6 +44,7 @@ import org.leakcanary.screens.HeaderCardLink.SHARE_HPROF
 import org.leakcanary.screens.Screen.ClientAppAnalysis
 import org.leakcanary.util.CurrentActivityProvider
 import org.leakcanary.util.LeakTraceWrapper
+import org.leakcanary.util.Sharer
 import shark.HeapAnalysisSuccess
 import shark.Leak
 import shark.LibraryLeak
@@ -65,7 +66,7 @@ sealed interface ClientAppAnalysisState {
 class ClientAppAnalysisViewModel @Inject constructor(
   private val repository: HeapRepository,
   private val navigator: Navigator,
-  private val activityProvider: CurrentActivityProvider
+  private val sharer: Sharer
 ) : ViewModel() {
 
   val state =
@@ -84,7 +85,7 @@ class ClientAppAnalysisViewModel @Inject constructor(
     when (link) {
       EXPLORE_HPROF -> TODO()
       SHARE_ANALYSIS -> {
-        share(LeakTraceWrapper.wrap(heapAnalysis.toString(), 80))
+        sharer.share(LeakTraceWrapper.wrap(heapAnalysis.toString(), 80))
       }
       PRINT -> {
         // TODO SharkLog will likely be disabled in release builds, we always want to print
@@ -98,18 +99,6 @@ class ClientAppAnalysisViewModel @Inject constructor(
   fun onLeakClicked(leak: Leak) {
     val currentScreen = navigator.currentScreenState.value.screen as ClientAppAnalysis
     navigator.goTo(Screen.Leak(leak.signature, currentScreen.analysisId))
-  }
-
-  private fun share(content: String) {
-    val intent = Intent(Intent.ACTION_SEND)
-    intent.type = "text/plain"
-    intent.putExtra(Intent.EXTRA_TEXT, content)
-
-    activityProvider.withActivity {
-      startActivity(
-        Intent.createChooser(intent, "Share with…")
-      )
-    }
   }
 }
 
