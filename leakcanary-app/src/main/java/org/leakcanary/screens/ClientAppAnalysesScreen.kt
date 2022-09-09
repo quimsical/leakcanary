@@ -34,8 +34,8 @@ import org.leakcanary.screens.ClientAppAnalysesState.Loaded
 import org.leakcanary.screens.ClientAppAnalysesState.Loading
 import org.leakcanary.screens.ClientAppAnalysisItemData.Failure
 import org.leakcanary.screens.ClientAppAnalysisItemData.Success
-import org.leakcanary.screens.Screen.ClientAppAnalyses
-import org.leakcanary.screens.Screen.ClientAppAnalysis
+import org.leakcanary.screens.Destination.ClientAppAnalysesDestination
+import org.leakcanary.screens.Destination.ClientAppAnalysisDestination
 import org.leakcanary.util.TimeFormatter
 
 sealed class ClientAppAnalysisItemData(val id: Long, val createdAtTimeMillis: Long) {
@@ -60,9 +60,9 @@ class ClientAppAnalysesViewModel @Inject constructor(
   // This flow is stopped when unsubscribed, so renavigating to the same
   // screen always polls the latest screen.
   val state = navigator.currentScreenState
-    .filter { it.screen is ClientAppAnalyses }
+    .filter { it.destination is ClientAppAnalysesDestination }
     .flatMapLatest { state ->
-      stateStream((state.screen as ClientAppAnalyses).packageName)
+      stateStream((state.destination as ClientAppAnalysesDestination).packageName)
     }.stateIn(
       viewModelScope, started = WhileSubscribedOrRetained, initialValue = Loading
     )
@@ -89,7 +89,7 @@ class ClientAppAnalysesViewModel @Inject constructor(
   fun onAnalysisClicked(analysis: ClientAppAnalysisItemData) {
     // TODO Don't go here if failure, go to a failure screen instead.
     check(analysis is Success)
-    navigator.goTo(ClientAppAnalysis(analysis.id))
+    navigator.goTo(ClientAppAnalysisDestination(analysis.id))
   }
 }
 

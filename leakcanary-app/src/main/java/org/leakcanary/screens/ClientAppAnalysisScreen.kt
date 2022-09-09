@@ -1,6 +1,5 @@
 package org.leakcanary.screens
 
-import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,19 +29,17 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import org.leakcanary.WhileSubscribedOrRetained
 import org.leakcanary.data.HeapRepository
 import org.leakcanary.screens.ClientAppAnalysisState.Loading
 import org.leakcanary.screens.ClientAppAnalysisState.Success
+import org.leakcanary.screens.Destination.ClientAppAnalysisDestination
 import org.leakcanary.screens.HeaderCardLink.EXPLORE_HPROF
 import org.leakcanary.screens.HeaderCardLink.PRINT
 import org.leakcanary.screens.HeaderCardLink.SHARE_ANALYSIS
 import org.leakcanary.screens.HeaderCardLink.SHARE_HPROF
-import org.leakcanary.screens.Screen.ClientAppAnalysis
-import org.leakcanary.util.CurrentActivityProvider
 import org.leakcanary.util.LeakTraceWrapper
 import org.leakcanary.util.Sharer
 import shark.HeapAnalysisSuccess
@@ -70,11 +67,12 @@ class ClientAppAnalysisViewModel @Inject constructor(
 ) : ViewModel() {
 
   val state =
-    navigator.currentScreenState.filter { it.screen is ClientAppAnalysis }.flatMapLatest { state ->
-      stateStream((state.screen as ClientAppAnalysis).analysisId)
-    }.stateIn(
-      viewModelScope, started = WhileSubscribedOrRetained, initialValue = Loading
-    )
+    navigator.filterDestination<ClientAppAnalysisDestination>()
+      .flatMapLatest { destination ->
+        stateStream(destination.analysisId)
+      }.stateIn(
+        viewModelScope, started = WhileSubscribedOrRetained, initialValue = Loading
+      )
 
   private fun stateStream(analysisId: Long) = repository.getHeapAnalysis(analysisId)
     .combine(repository.getLeakReadStatuses(analysisId)) { analysis, leakReadStatusMap ->
@@ -97,8 +95,9 @@ class ClientAppAnalysisViewModel @Inject constructor(
   }
 
   fun onLeakClicked(leak: Leak) {
-    val currentScreen = navigator.currentScreenState.value.screen as ClientAppAnalysis
-    navigator.goTo(Screen.Leak(leak.signature, currentScreen.analysisId))
+    val currentScreen =
+      navigator.currentScreenState.value.destination as ClientAppAnalysisDestination
+    navigator.goTo(Destination.LeakDestination(leak.signature, currentScreen.analysisId))
   }
 }
 

@@ -35,7 +35,7 @@ lt.leak_trace_index
 , l.is_read
 , l.is_library_leak
 FROM leak_trace lt
-LEFT JOIN leak l ON lt.leak_signature = l.signature
-LEFT JOIN heap_analysis h ON lt.heap_analysis_id = h.id
+JOIN leak l ON lt.leak_signature = l.signature
+JOIN heap_analysis h ON lt.heap_analysis_id = h.id
 WHERE l.signature = :signature
 ORDER BY h.created_at_time_millis DESC;

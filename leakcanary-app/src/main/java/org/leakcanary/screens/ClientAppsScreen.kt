@@ -18,15 +18,15 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import org.leakcanary.data.HeapRepository
 import org.leakcanary.WhileSubscribedOrRetained
-import org.leakcanary.screens.ClientAppState.Loaded
+import org.leakcanary.screens.ClientAppState.Success
 import org.leakcanary.screens.ClientAppState.Loading
-import org.leakcanary.screens.Screen.ClientAppAnalyses
+import org.leakcanary.screens.Destination.ClientAppAnalysesDestination
 
 data class ClientApp(val packageName: String, val leakCount: Int)
 
 sealed interface ClientAppState {
   object Loading : ClientAppState
-  class Loaded(val clientApps: List<ClientApp>) : ClientAppState
+  class Success(val clientApps: List<ClientApp>) : ClientAppState
 }
 
 @HiltViewModel
@@ -35,31 +35,31 @@ class ClientAppsViewModel @Inject constructor(
   private val navigator: Navigator
 ) : ViewModel() {
 
-  val clientAppState = stateStream().stateIn(
+  val state = stateStream().stateIn(
     viewModelScope,
     started = WhileSubscribedOrRetained,
     initialValue = Loading
   )
 
   fun onAppClicked(app: ClientApp) {
-    navigator.goTo(ClientAppAnalyses(app.packageName))
+    navigator.goTo(ClientAppAnalysesDestination(app.packageName))
   }
 
   private fun stateStream() = repository.listClientApps()
-    .map { app -> Loaded(app.map { ClientApp(it.package_name, it.leak_count) }) }
+    .map { app -> Success(app.map { ClientApp(it.package_name, it.leak_count) }) }
 }
 
 @Composable
 fun ClientAppsScreen(
   viewModel: ClientAppsViewModel = viewModel(),
 ) {
-  val clientAppState: ClientAppState by viewModel.clientAppState.collectAsState()
+  val clientAppState: ClientAppState by viewModel.state.collectAsState()
 
   when (val state = clientAppState) {
     is Loading -> {
       Text(text = "Loading...")
     }
-    is Loaded -> {
+    is Success -> {
       if (state.clientApps.isEmpty()) {
         Text(text = "No apps")
       } else {
