@@ -16,10 +16,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import org.leakcanary.data.HeapRepository
 import org.leakcanary.WhileSubscribedOrRetained
-import org.leakcanary.screens.ClientAppState.Success
+import org.leakcanary.data.HeapRepository
 import org.leakcanary.screens.ClientAppState.Loading
+import org.leakcanary.screens.ClientAppState.Success
 import org.leakcanary.screens.Destination.ClientAppAnalysesDestination
 
 data class ClientApp(val packageName: String, val leakCount: Int)
