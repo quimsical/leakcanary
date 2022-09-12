@@ -26,12 +26,11 @@ import shark.LibraryLeak
 class HeapRepository @Inject constructor(
   private val db: Database,
   private val sqlDriver: SqlDriver,
-  @DatabaseReadDispatcher private val dbReadDispatcher: CoroutineDispatcher,
-  @DatabaseWriteDispatcher private val dbWriteDispatcher: CoroutineDispatcher
+  private val databaseDispatchers: DatabaseDispatchers
 ) {
 
   fun insertHeapAnalysis(packageName: String, heapAnalysis: HeapAnalysis): Long {
-    return runBlocking(dbWriteDispatcher) {
+    return runBlocking(databaseDispatchers.forWrites) {
       db.transactionWithResult {
         db.appQueries.insertOrIgnore(packageName)
         when (heapAnalysis) {
@@ -81,7 +80,7 @@ class HeapRepository @Inject constructor(
   }
 
   suspend fun markAsRead(signature: String) {
-    withContext(dbWriteDispatcher) {
+    withContext(databaseDispatchers.forWrites) {
       // Custom impl to avoid triggering listeners.
       sqlDriver.execute(
         identifier = null,
@@ -99,28 +98,28 @@ class HeapRepository @Inject constructor(
   }
 
   fun listAppAnalyses(packageName: String): Flow<List<SelectAllByApp>> {
-    return db.heapAnalysisQueries.selectAllByApp(packageName).asFlow().mapToList(dbReadDispatcher)
+    return db.heapAnalysisQueries.selectAllByApp(packageName).asFlow().mapToList(databaseDispatchers.forReads)
   }
 
   fun listClientApps(): Flow<List<App>> {
-    return db.appQueries.selectAll().asFlow().mapToList(dbReadDispatcher)
+    return db.appQueries.selectAll().asFlow().mapToList(databaseDispatchers.forReads)
   }
 
   // TODO Handle error, this will throw NPE if the analysis doesn't exist
   fun getHeapAnalysis(heapAnalysisId: Long): Flow<HeapAnalysis> {
     return db.heapAnalysisQueries.selectById(heapAnalysisId).asFlow()
-      .mapToOne(dbReadDispatcher).map { Serializables.fromByteArray<HeapAnalysis>(it)!! }
+      .mapToOne(databaseDispatchers.forReads).map { Serializables.fromByteArray<HeapAnalysis>(it)!! }
   }
 
   fun getLeakReadStatuses(heapAnalysisId: Long): Flow<Map<String, Boolean>> {
     return db.leakQueries.retrieveLeakReadStatuses(heapAnalysisId).asFlow()
-      .mapToList(dbReadDispatcher)
+      .mapToList(databaseDispatchers.forReads)
       .map { it.associate { (signature, isRead) -> signature to isRead } }
   }
 
   fun getLeak(leakSignature: String): Flow<List<RetrieveLeakBySignature>> {
     return db.leakTraceQueries.retrieveLeakBySignature(leakSignature)
       .asFlow()
-      .mapToList(dbReadDispatcher)
+      .mapToList(databaseDispatchers.forReads)
   }
 }

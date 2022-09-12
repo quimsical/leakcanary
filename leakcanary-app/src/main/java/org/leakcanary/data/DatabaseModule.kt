@@ -3,7 +3,6 @@ package org.leakcanary.data
 import android.app.ActivityManager
 import android.app.Application
 import android.content.Context
-import android.content.res.Resources
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import com.squareup.sqldelight.android.AndroidSqliteDriver
 import com.squareup.sqldelight.db.SqlDriver
@@ -11,11 +10,9 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Provider
 import javax.inject.Qualifier
 import javax.inject.Singleton
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.newFixedThreadPoolContext
-import kotlinx.coroutines.newSingleThreadContext
 import org.leakcanary.Database
 
 @Module
@@ -45,40 +42,11 @@ class DatabaseModule {
 
   @Provides @Singleton fun provideDatabase(driver: SqlDriver): Database = Database(driver)
 
-  @Qualifier
-  @Retention(AnnotationRetention.BINARY)
-  annotation class DatabaseWriteDispatcher
-
-  @Qualifier
-  @Retention(AnnotationRetention.BINARY)
-  annotation class DatabaseReadDispatcher
-
-  @Provides @Singleton @DatabaseWriteDispatcher fun provideDatabaseWriteDispatcher(
-    @WriteAheadLoggingEnabled wolEnabled: Boolean
-  ): CoroutineDispatcher {
-    return if (wolEnabled) {
-      newSingleThreadContext("database-writes")
-    } else {
-      newSingleThreadContext("database-reads-writes")
-    }
-  }
-
-  @Provides @Singleton @DatabaseReadDispatcher fun provideDatabaseReadDispatcher(
+  @Provides fun provideDatabaseDispatchers(
     @WriteAheadLoggingEnabled wolEnabled: Boolean,
-    @DatabaseWriteDispatcher databaseWriteDispatcher: CoroutineDispatcher
-  ): CoroutineDispatcher {
-    return if (wolEnabled) {
-      val resources = Resources.getSystem()
-      val resId =
-        resources.getIdentifier("db_connection_pool_size", "integer", "android")
-      val connectionPoolSize = if (resId != 0) {
-        resources.getInteger(resId)
-      } else {
-        2
-      }
-      newFixedThreadPoolContext(connectionPoolSize, "database-reads")
-    } else {
-      databaseWriteDispatcher
-    }
+    wolDispatchers: Provider<WriteAheadLoggingEnabledDatabaseDispatchers>,
+    singleDispatchers: Provider<SingleConnectionDatabaseDispatchers>
+  ): DatabaseDispatchers {
+    return if (wolEnabled) wolDispatchers.get() else singleDispatchers.get()
   }
 }
