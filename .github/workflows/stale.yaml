@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/stale@v5
         with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token: ${{ 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 }}
           days-before-stale: 30
           days-before-close: 7
           stale-issue-message: 'This issue is not actionable without the required information. Please comment or this will be closed in 7 days.'
